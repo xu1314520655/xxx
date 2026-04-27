@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { projects } from '../data/projects';
+import { loadPyodide } from 'pyodide';
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -8,6 +9,8 @@ const ProjectDetail: React.FC = () => {
   const [code, setCode] = useState('');
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const [pyodide, setPyodide] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (project) {
@@ -15,37 +18,56 @@ const ProjectDetail: React.FC = () => {
     }
   }, [project]);
 
+  // 加载 Pyodide
+  useEffect(() => {
+    const initPyodide = async () => {
+      try {
+        const pyodideInstance = await loadPyodide({
+          indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/"
+        });
+        // 安装 pandas 和 numpy
+        await pyodideInstance.loadPackage(["pandas", "numpy"]);
+        setPyodide(pyodideInstance);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Failed to load Pyodide:", error);
+        setIsLoading(false);
+        setOutput("加载 Pyodide 失败，请刷新页面重试");
+      }
+    };
+    initPyodide();
+  }, []);
+
   const runCode = async () => {
+    if (!pyodide) {
+      setOutput("Pyodide 尚未加载完成，请稍候");
+      return;
+    }
+
     setIsRunning(true);
     setOutput('运行中...');
     
-    // 模拟代码运行
-    setTimeout(() => {
-      setOutput('代码运行结果：\n\n' + 
-        '原始数据形状: (105, 5)\n\n' +
-        '数据质量报告:\n' +
-        '缺失值统计:\n' +
-        'order_id       0\n' +
-        'customer_id    7\n' +
-        'order_date     0\n' +
-        'amount        10\n' +
-        'status         0\n' +
-        'dtype: int64\n\n' +
-        '重复记录数: 5\n\n' +
-        '异常值检测（金额>5000）: 5\n\n' +
-        '清洗后数据形状: (100, 5)\n' +
-        '清洗后缺失值统计:\n' +
-        'order_id       0\n' +
-        'customer_id    0\n' +
-        'order_date     0\n' +
-        'amount         0\n' +
-        'status         0\n' +
-        'dtype: int64\n\n' +
-        '清洗后异常值检测（金额>5000）: 0\n\n' +
-        '数据已保存为 cleaned_orders.csv'
-      );
+    try {
+      // 重定向标准输出
+      let outputContent = '';
+      pyodide.globals.set('print', (text: any) => {
+        outputContent += text + '\n';
+      });
+
+      // 执行代码
+      await pyodide.runPythonAsync(code);
+      
+      // 显示输出
+      if (outputContent) {
+        setOutput('代码运行结果：\n\n' + outputContent);
+      } else {
+        setOutput('代码执行成功，但没有输出');
+      }
+    } catch (error: any) {
+      setOutput('代码执行错误：\n\n' + error.message);
+    } finally {
       setIsRunning(false);
-    }, 2000);
+    }
   };
 
   if (!project) {
@@ -156,16 +178,21 @@ const ProjectDetail: React.FC = () => {
                 <h2 className="text-lg font-semibold text-gray-900">代码编辑器</h2>
                 <button 
                   onClick={runCode}
-                  disabled={isRunning}
+                  disabled={isRunning || isLoading}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  {isRunning ? '运行中...' : '运行代码'}
+                  {isLoading ? '加载中...' : isRunning ? '运行中...' : '运行代码'}
                 </button>
               </div>
               
               {/* 代码编辑区 */}
               <div className="bg-gray-900 text-white rounded-lg p-4 mb-4" style={{ minHeight: '400px' }}>
-                <pre className="whitespace-pre-wrap font-mono text-sm">{code}</pre>
+                <textarea
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  className="w-full h-full bg-transparent border-none outline-none font-mono text-sm resize-none"
+                  placeholder="在此输入 Python 代码..."
+                />
               </div>
               
               {/* 运行结果 */}
