@@ -11,6 +11,7 @@ const ProjectDetail: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [pyodide, setPyodide] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAnswer, setShowAnswer] = useState(false);
 
   useEffect(() => {
     if (project) {
@@ -67,6 +68,13 @@ const ProjectDetail: React.FC = () => {
       setOutput('代码执行错误：\n\n' + error.message);
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  const resetCode = () => {
+    if (project) {
+      setCode(project.sampleCode);
+      setOutput('');
     }
   };
 
@@ -147,7 +155,7 @@ const ProjectDetail: React.FC = () => {
                 </ul>
               </div>
               
-              <div>
+              <div className="mb-6">
                 <h2 className="text-lg font-semibold mb-3 text-gray-900">数据结构</h2>
                 <div className="bg-gray-50 p-4 rounded">
                   <table className="w-full text-sm">
@@ -168,7 +176,26 @@ const ProjectDetail: React.FC = () => {
                   </table>
                 </div>
               </div>
+
+              <div>
+                <button
+                  onClick={() => setShowAnswer(!showAnswer)}
+                  className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition"
+                >
+                  {showAnswer ? '隐藏答案解析' : '查看答案解析'}
+                </button>
+              </div>
             </div>
+
+            {/* 答案解析区域 */}
+            {showAnswer && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-lg font-semibold mb-3 text-gray-900">答案解析</h2>
+                <div className="bg-purple-50 p-4 rounded text-gray-700 whitespace-pre-line">
+                  {project.answerExplanation}
+                </div>
+              </div>
+            )}
           </div>
           
           {/* 右侧代码编辑器 */}
@@ -176,21 +203,29 @@ const ProjectDetail: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">代码编辑器</h2>
-                <button 
-                  onClick={runCode}
-                  disabled={isRunning || isLoading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? '加载中...' : isRunning ? '运行中...' : '运行代码'}
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={resetCode}
+                    className="bg-gray-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition"
+                  >
+                    重置代码
+                  </button>
+                  <button 
+                    onClick={runCode}
+                    disabled={isRunning || isLoading}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? '加载中...' : isRunning ? '运行中...' : '运行代码'}
+                  </button>
+                </div>
               </div>
               
               {/* 代码编辑区 */}
-              <div className="bg-gray-900 text-white rounded-lg p-4 mb-4" style={{ minHeight: '400px' }}>
+              <div className="mb-4">
                 <textarea
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="w-full h-full bg-transparent border-none outline-none font-mono text-sm resize-none"
+                  className="w-full h-96 bg-gray-900 text-green-400 font-mono text-sm p-4 rounded-lg border-2 border-gray-700 focus:border-blue-500 focus:outline-none resize-none"
                   placeholder="在此输入 Python 代码..."
                 />
               </div>

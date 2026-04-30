@@ -10,6 +10,7 @@ export interface Project {
     columns: string[];
     types: string[];
   };
+  answerExplanation: string;
 }
 
 export const projects: Project[] = [
@@ -53,11 +54,11 @@ df = pd.DataFrame(data)
 df = pd.concat([df, df.iloc[0:5]], ignore_index=True)
 
 print('原始数据形状:', df.shape)
-print('\n数据质量报告:')
+print('\\n数据质量报告:')
 print('缺失值统计:')
 print(df.isna().sum())
-print('\n重复记录数:', df.duplicated().sum())
-print('\n异常值检测（金额>5000）:', (df['amount'] > 5000).sum())
+print('\\n重复记录数:', df.duplicated().sum())
+print('\\n异常值检测（金额>5000）:', (df['amount'] > 5000).sum())
 
 # 数据清洗
 # 1. 去重
@@ -73,18 +74,34 @@ df_clean['amount'] = np.where(df_clean['amount'] > 5000, df_clean['amount'].mean
 # 4. 数据类型转换
 df_clean['order_date'] = pd.to_datetime(df_clean['order_date'])
 
-print('\n清洗后数据形状:', df_clean.shape)
+print('\\n清洗后数据形状:', df_clean.shape)
 print('清洗后缺失值统计:')
 print(df_clean.isna().sum())
-print('\n清洗后异常值检测（金额>5000）:', (df_clean['amount'] > 5000).sum())
+print('\\n清洗后异常值检测（金额>5000）:', (df_clean['amount'] > 5000).sum())
 
 # 保存清洗后的数据
 df_clean.to_csv('cleaned_orders.csv', index=False)
-print('\n数据已保存为 cleaned_orders.csv')`,
+print('\\n数据已保存为 cleaned_orders.csv')`,
     dataSchema: {
       columns: ['order_id', 'customer_id', 'order_date', 'amount', 'status'],
       types: ['int', 'int', 'datetime', 'float', 'string']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. 数据清洗步骤：
+   - 去重：使用 drop_duplicates() 去除重复记录
+   - 缺失值处理：金额用均值填充，客户ID用0填充
+   - 异常值处理：金额超过5000的用均值替代
+   - 数据类型转换：确保日期字段为 datetime 类型
+
+2. 关键思路：
+   - 先做数据质量评估，了解数据问题
+   - 针对不同问题选择合适的处理方法
+   - 处理后再次评估，确保问题解决
+
+3. 注意事项：
+   - 缺失值处理要考虑业务含义
+   - 异常值阈值要基于业务知识
+   - 数据类型要与业务逻辑匹配`
   },
   {
     id: '2',
@@ -127,7 +144,7 @@ df['day_of_week'] = df['timestamp'].dt.dayofweek
 df['is_weekend'] = df['day_of_week'].isin([5, 6])
 
 # 2. URL特征
-df['page_type'] = df['url'].str.extract(r'https://example\.com/(\w+)')
+df['page_type'] = df['url'].str.extract(r'https://example\\.com/(\\w+)')
 
 # 3. 会话划分
 # 按用户分组，按时间排序
@@ -177,11 +194,26 @@ print(user_features.head())
 
 # 保存特征表
 user_features.to_csv('user_features.csv', index=False)
-print('\n特征表已保存为 user_features.csv')`,
+print('\\n特征表已保存为 user_features.csv')`,
     dataSchema: {
       columns: ['user_id', 'timestamp', 'url'],
       types: ['int', 'datetime', 'string']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. 特征提取步骤：
+   - 时间特征：从时间戳提取小时、星期、是否周末
+   - URL特征：使用正则表达式从URL提取页面类型
+   - 会话划分：按用户分组，30分钟无操作作为新会话开始
+
+2. 关键思路：
+   - 先做单特征提取，再做组合特征
+   - 会话划分要考虑业务场景（30分钟是常用阈值）
+   - 特征合并使用 merge 操作，注意处理缺失值
+
+3. 注意事项：
+   - 时间差计算要先排序
+   - 比例计算要注意分母不能为0
+   - 缺失值要用合理的默认值填充`
   },
   {
     id: '3',
@@ -219,30 +251,30 @@ print(df.head())
 # 1. 输出每个订单对应的商品列表
 order_products = df.groupby('order_id')['product'].agg(list).reset_index()
 order_products['product_list'] = order_products['product'].apply(lambda x: ','.join(x))
-print('\n每个订单的商品列表:')
+print('\\n每个订单的商品列表:')
 print(order_products[['order_id', 'product_list']].head())
 
 # 2. 生成二元矩阵（one-hot编码）
 binary_matrix = pd.crosstab(df['order_id'], df['product']).astype(bool).astype(int)
-print('\n二元矩阵形状:', binary_matrix.shape)
+print('\\n二元矩阵形状:', binary_matrix.shape)
 print('二元矩阵前5行:')
 print(binary_matrix.head())
 
 # 3. 计算单项商品支持度
 support = binary_matrix.mean().sort_values(ascending=False)
-print('\n商品支持度:')
+print('\\n商品支持度:')
 print(support)
 
 # 4. 筛选支持度>0.01的商品
 filtered_products = support[support > 0.01].index.tolist()
 filtered_matrix = binary_matrix[filtered_products]
-print('\n筛选后商品数量:', len(filtered_products))
+print('\\n筛选后商品数量:', len(filtered_products))
 print('筛选后商品:', filtered_products)
 
 # 保存结果
 order_products.to_csv('order_products.csv', index=False)
 binary_matrix.to_csv('binary_matrix.csv')
-print('\n结果已保存为 order_products.csv 和 binary_matrix.csv')
+print('\\n结果已保存为 order_products.csv 和 binary_matrix.csv')
 
 # 注意：实际使用 mlxtend 进行关联规则挖掘需要安装该库
 # from mlxtend.frequent_patterns import apriori, association_rules
@@ -252,7 +284,22 @@ print('\n结果已保存为 order_products.csv 和 binary_matrix.csv')
     dataSchema: {
       columns: ['order_id', 'product'],
       types: ['int', 'string']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. 数据转换步骤：
+   - 商品列表：使用 groupby + agg(list) 将订单商品聚合为列表
+   - 二元矩阵：使用 pd.crosstab 生成 one-hot 编码矩阵
+   - 支持度计算：直接对列求均值（因为矩阵是0/1编码）
+
+2. 关键思路：
+   - 支持度 = 包含该商品的订单数 / 总订单数
+   - 筛选低支持度商品可以减少计算量
+   - mlxtend 库可以直接使用二元矩阵进行关联规则挖掘
+
+3. 注意事项：
+   - 支持度阈值要根据数据规模调整
+   - 商品名称要统一，避免拼写差异
+   - 二元矩阵可能很稀疏，注意内存使用`
   },
   {
     id: '4',
@@ -266,7 +313,7 @@ print('\n结果已保存为 order_products.csv 和 binary_matrix.csv')
       '可视化：分群占比饼图、雷达图'
     ],
     tasks: [
-      '将客户分为8类（如“重要价值客户”“一般发展客户”），输出每类人数与贡献金额占比。'
+      '将客户分为8类（如"重要价值客户""一般发展客户"），输出每类人数与贡献金额占比。'
     ],
     sampleCode: `import pandas as pd
 import numpy as np
@@ -345,11 +392,31 @@ print(segment_stats)
 # 保存结果
 rfm.to_csv('rfm_analysis.csv')
 segment_stats.to_csv('segment_stats.csv')
-print('\n结果已保存为 rfm_analysis.csv 和 segment_stats.csv')`,
+print('\\n结果已保存为 rfm_analysis.csv 和 segment_stats.csv')`,
     dataSchema: {
       columns: ['customer_id', 'transaction_date', 'amount'],
       types: ['int', 'datetime', 'float']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. RFM计算步骤：
+   - Recency：距离当前日期的天数（越小越好）
+   - Frequency：购买次数（越多越好）
+   - Monetary：消费总金额（越多越好）
+
+2. 评分分层：
+   - 使用 pd.cut 将连续值分成5等份
+   - R评分反向（因为天数越小越好）
+   - F和M评分正向（数值越大越好）
+
+3. 客户分群：
+   - 根据RFM分数组合定义8类客户
+   - 重要价值客户：R>=4, F>=4, M>=4
+   - 分群规则要结合业务实际调整
+
+4. 注意事项：
+   - 当前日期要根据分析时间确定
+   - 分箱区间可以使用等频或等宽
+   - 分群规则要可解释、可操作`
   },
   {
     id: '5',
@@ -357,7 +424,7 @@ print('\n结果已保存为 rfm_analysis.csv 和 segment_stats.csv')`,
     description: '日销售数据（日期，销售额），含节假日标识，进行趋势分析和异常检测。',
     difficulty: 'intermediate',
     technicalPoints: [
-      '重采样（resample(\'W\') 周趋势）',
+      '重采样（resample(\\'W\\') 周趋势）',
       '滑动窗口统计（rolling 计算7日移动平均）',
       '同比/环比计算（shift）',
       '基于Z-score的异常检测'
@@ -427,11 +494,30 @@ print(f'节假日拉动系数: {pull_factor:.2f}')
 # 保存结果
 df.to_csv('sales_analysis.csv')
 weekly_sales.to_csv('weekly_sales.csv')
-print('\n结果已保存为 sales_analysis.csv 和 weekly_sales.csv')`,
+print('\\n结果已保存为 sales_analysis.csv 和 weekly_sales.csv')`,
     dataSchema: {
       columns: ['date', 'sales', 'is_holiday'],
       types: ['datetime', 'float', 'boolean']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. 时间序列分析步骤：
+   - 重采样：将日数据聚合为周/月数据看趋势
+   - 移动平均：平滑短期波动，看长期趋势
+   - 同比/环比：分析增长趋势
+
+2. 异常检测：
+   - Z-score = (值 - 均值) / 标准差
+   - |Z-score| > 3 视为异常
+   - 也可以用IQR方法检测异常
+
+3. 节假日效应：
+   - 拉动系数 = 节假日平均销售 / 非节假日平均销售
+   - 系数>1表示节假日有正向拉动作用
+
+4. 注意事项：
+   - 日期要设置为索引才能用resample
+   - 移动平均窗口大小要根据数据频率选择
+   - 同比计算要注意闰年问题`
   },
   {
     id: '6',
@@ -514,17 +600,37 @@ funnel_data = funnel_data.set_index('event_type').loc[funnel_order].reset_index(
 funnel_data['conversion_rate'] = funnel_data['user_count'] / funnel_data['user_count'].iloc[0] * 100
 funnel_data['dropoff_rate'] = 100 - funnel_data['conversion_rate']
 
-print('\n漏斗分析:')
+print('\\n漏斗分析:')
 print(funnel_data)
 
 # 保存结果
 retention_matrix.to_csv('retention_matrix.csv')
 funnel_data.to_csv('funnel_analysis.csv', index=False)
-print('\n结果已保存为 retention_matrix.csv 和 funnel_analysis.csv')`,
+print('\\n结果已保存为 retention_matrix.csv 和 funnel_analysis.csv')`,
     dataSchema: {
       columns: ['user_id', 'date', 'event_type'],
       types: ['int', 'datetime', 'string']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. 留存率计算步骤：
+   - 同期群：按用户注册日期分组
+   - 天数差：计算每个活跃日与注册日的间隔
+   - 留存率 = 第N天活跃用户数 / 注册用户数
+
+2. 留存率矩阵：
+   - 行：注册日期
+   - 列：留存天数（1日、3日、7日）
+   - 值：留存率百分比
+
+3. 漏斗分析：
+   - 按事件顺序统计各环节用户数
+   - 转化率 = 当前环节用户数 / 第一环节用户数
+   - 流失率 = 100% - 转化率
+
+4. 注意事项：
+   - 留存定义要明确（登录/购买/活跃）
+   - 漏斗环节要按业务流程排序
+   - 时间范围要足够长以计算7日留存`
   },
   {
     id: '7',
@@ -572,12 +678,12 @@ print(conversion_rates)
 # 2. 卡方检验
 # 创建列联表
 contingency_table = pd.crosstab(df['group'], df['converted'])
-print('\n列联表:')
+print('\\n列联表:')
 print(contingency_table)
 
 # 执行卡方检验
 chi2, p_value, dof, expected = chi2_contingency(contingency_table)
-print('\n卡方检验结果:')
+print('\\n卡方检验结果:')
 print(f'卡方统计量: {chi2:.4f}')
 print(f'P值: {p_value:.4f}')
 print(f'自由度: {dof}')
@@ -586,22 +692,43 @@ print(f'自由度: {dof}')
 n = contingency_table.sum().sum()
 cramers_v = np.sqrt(chi2 / (n * (min(contingency_table.shape) - 1)))
 
-print(f'\n效应量（Cramer\'s V）: {cramers_v:.4f}')
+print(f'\\n效应量（Cramer\\'s V）: {cramers_v:.4f}')
 
 # 4. 结论
 if p_value < 0.05:
-    print('\n结论：实验组转化率显著高于对照组（α=0.05）')
+    print('\\n结论：实验组转化率显著高于对照组（α=0.05）')
 else:
-    print('\n结论：实验组与对照组转化率无显著差异（α=0.05）')
+    print('\\n结论：实验组与对照组转化率无显著差异（α=0.05）')
 
 # 保存结果
 conversion_rates.to_csv('conversion_rates.csv')
 contingency_table.to_csv('contingency_table.csv')
-print('\n结果已保存为 conversion_rates.csv 和 contingency_table.csv')`,
+print('\\n结果已保存为 conversion_rates.csv 和 contingency_table.csv')`,
     dataSchema: {
       columns: ['user_id', 'group', 'converted'],
       types: ['int', 'string', 'boolean']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. A/B测试分析步骤：
+   - 描述统计：计算两组的转化率
+   - 假设检验：用卡方检验判断差异是否显著
+   - 效应量：用Cramer's V衡量差异大小
+
+2. 卡方检验：
+   - 原假设：两组转化率无差异
+   - P值<0.05拒绝原假设，认为差异显著
+   - α=0.05是常用的显著性水平
+
+3. 效应量：
+   - Cramer's V范围：0-1
+   - <0.1: 微弱效应
+   - 0.1-0.3: 中等效应
+   - >0.3: 强效应
+
+4. 注意事项：
+   - 样本量要足够大
+   - 分组要随机
+   - 只看P值不够，还要看效应量和实际业务价值`
   },
   {
     id: '8',
@@ -726,17 +853,42 @@ print(data.head())
 #     '新用户': '欢迎礼包，首次购买折扣，引导复购'
 # }
 
-# print('\n营销建议:')
+# print('\\n营销建议:')
 # for cluster_id, name in cluster_names.items():
 #     print(f'{name}: {marketing_advice[name]}')
 
 # 保存数据
 data.to_csv('user_clustering_data.csv', index=False)
-print('\n数据已保存为 user_clustering_data.csv')`,
+print('\\n数据已保存为 user_clustering_data.csv')`,
     dataSchema: {
       columns: ['user_id', 'total_spend', 'frequency', 'recency', 'avg_order_value'],
       types: ['int', 'float', 'float', 'float', 'float']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. K-Means聚类步骤：
+   - 数据标准化：消除量纲影响
+   - 确定K值：肘部法则 + 轮廓系数
+   - 执行聚类：fit_predict
+   - 结果分析：按聚类分组统计
+
+2. 数据标准化：
+   - StandardScaler将数据转换为均值0，标准差1
+   - 不同量纲的特征必须标准化
+
+3. 确定K值：
+   - 肘部法则：inertia下降变缓的点
+   - 轮廓系数：越高聚类效果越好
+   - 结合业务需求选择K值
+
+4. 聚类解释：
+   - 分析每个簇的特征均值
+   - 给簇起有业务含义的名字
+   - 针对不同簇制定营销策略
+
+5. 注意事项：
+   - K-Means对异常值敏感
+   - 特征选择要合理
+   - 聚类结果要可解释、可落地`
   },
   {
     id: '9',
@@ -750,7 +902,7 @@ print('\n数据已保存为 user_clustering_data.csv')`,
       '分组统计：不同购物篮大小对应的平均折扣率'
     ],
     tasks: [
-      '输出“小篮（1-2件）”“中篮（3-5件）”“大篮（6件以上）”的订单数及平均客单价。'
+      '输出"小篮（1-2件）""中篮（3-5件）""大篮（6件以上）"的订单数及平均客单价。'
     ],
     sampleCode: `import pandas as pd
 import numpy as np
@@ -769,14 +921,14 @@ quantities = np.random.randint(1, 5, len(order_ids))
 is_high_profit = np.random.binomial(1, 0.3, len(order_ids))
 
 # 生成折扣率
-折扣率 = np.random.uniform(0.8, 1.0, len(order_ids))
+discount = np.random.uniform(0.8, 1.0, len(order_ids))
 
 df = pd.DataFrame({
     'order_id': order_ids,
     'price': prices,
     'quantity': quantities,
     'is_high_profit': is_high_profit,
-    'discount': 折扣率
+    'discount': discount
 })
 
 # 计算商品金额
@@ -822,23 +974,41 @@ df['price_band'] = pd.qcut(df['price'], 4, labels=['低价格带', '中低价格
 
 # 5. 交叉表分析（价格带 vs 是否购买高利润商品）
 price_profit_crosstab = pd.crosstab(df['price_band'], df['is_high_profit'], normalize='index') * 100
-print('\n价格带与高利润商品购买关系:')
+print('\\n价格带与高利润商品购买关系:')
 print(price_profit_crosstab)
 
 # 6. 不同购物篮大小对应的平均折扣率
 basket_discount = df.merge(basket_stats[['basket_size_category']], on='order_id')
 basket_discount_analysis = basket_discount.groupby('basket_size_category')['discount'].mean()
-print('\n不同购物篮大小的平均折扣率:')
+print('\\n不同购物篮大小的平均折扣率:')
 print(basket_discount_analysis)
 
 # 保存结果
 basket_stats.to_csv('basket_stats.csv')
 basket_analysis.to_csv('basket_analysis.csv')
-print('\n结果已保存为 basket_stats.csv 和 basket_analysis.csv')`,
+print('\\n结果已保存为 basket_stats.csv 和 basket_analysis.csv')`,
     dataSchema: {
       columns: ['order_id', 'price', 'quantity', 'is_high_profit', 'discount'],
       types: ['int', 'float', 'int', 'boolean', 'float']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. 购物篮分析步骤：
+   - 聚合订单级数据：总金额、商品数量
+   - 划分购物篮大小：自定义分类规则
+   - 分组统计：不同篮大小的订单数和客单价
+
+2. 价格带划分：
+   - pd.qcut：按分位数划分，每段样本量相近
+   - 也可以用pd.cut：按固定区间划分
+
+3. 交叉表分析：
+   - pd.crosstab：两个分类变量的交叉频数
+   - normalize='index'：按行计算百分比
+
+4. 注意事项：
+   - 购物篮大小划分要符合业务实际
+   - 价格带数量要适中（4-5个比较合适）
+   - 交叉表分析要结合业务知识解读`
   },
   {
     id: '10',
@@ -943,7 +1113,7 @@ hourly_users.columns = ['hour', 'user_count']
 # 假设流失率与下单用户数成反比（简化分析）
 hourly_users['loss_rate'] = 100 - (hourly_users['user_count'] / hourly_users['user_count'].max() * 100)
 
-print('\n各时段下单用户流失率:')
+print('\\n各时段下单用户流失率:')
 print(hourly_users.sort_values('loss_rate', ascending=False))
 
 # 3. 基于聚类结果与购物车分析，设计交叉销售策略
@@ -958,11 +1128,11 @@ category_stats = order_detail.groupby('category').agg({
     'order_id': 'order_count'
 })
 
-print('\n商品类别统计:')
+print('\\n商品类别统计:')
 print(category_stats)
 
 # 交叉销售策略示例
-print('\n交叉销售策略建议:')
+print('\\n交叉销售策略建议:')
 print('1. 电子产品 + 家居: 购买电子产品的用户推荐相关家居配件')
 print('2. 服装 + 运动: 购买服装的用户推荐运动装备')
 print('3. 食品 + 家居: 购买食品的用户推荐厨房用品')
@@ -973,10 +1143,37 @@ products.to_csv('products.csv', index=False)
 orders.to_csv('orders.csv', index=False)
 order_items.to_csv('order_items.csv', index=False)
 reviews.to_csv('reviews.csv', index=False)
-print('\n数据已保存为 users.csv, products.csv, orders.csv, order_items.csv, reviews.csv')`,
+print('\\n数据已保存为 users.csv, products.csv, orders.csv, order_items.csv, reviews.csv')`,
     dataSchema: {
       columns: ['user_id', 'product_id', 'order_id', 'order_date', 'amount', 'category'],
       types: ['int', 'int', 'int', 'datetime', 'float', 'string']
-    }
+    },
+    answerExplanation: `【答案解析】
+1. 综合分析步骤：
+   - 数据整合：多表merge关联
+   - 问题拆解：将业务问题转化为分析问题
+   - 综合运用：灵活应用前面学的技术
+   - 业务建议：基于分析结果提出可落地的建议
+
+2. 复购率分析：
+   - 复购定义：购买次数>=2
+   - 复购率 = 复购用户数 / 总购买用户数
+   - 按类别分组计算对比
+
+3. 时段流失分析：
+   - 按小时分组统计下单用户数
+   - 流失率与下单量负相关（简化假设）
+   - 实际可以结合留存数据更准确分析
+
+4. 交叉销售策略：
+   - 分析类别间的购买关联
+   - 结合业务知识设计组合推荐
+   - 策略要具体、可执行
+
+5. 注意事项：
+   - 多表关联要注意键的一致性
+   - 分析要紧扣业务问题
+   - 建议要具体、有数据支撑
+   - 报告结构要清晰，图文并茂`
   }
 ];
